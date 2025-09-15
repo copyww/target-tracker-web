@@ -18,6 +18,10 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, unique=True)
+<<<<<<< HEAD
+=======
+    password = Column(String)
+>>>>>>> 117c2a43949499174f12e29904232b9e8fedea0d
     videos = relationship("Video", back_populates="user")
 
 # 视频表
