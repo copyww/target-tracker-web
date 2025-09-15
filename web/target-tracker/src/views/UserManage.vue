@@ -1,56 +1,59 @@
 <template>
-<div>
-<h2>用户管理</h2>
-<el-table :data="users">
-<el-table-column prop="username" label="用户名" />
-<el-table-column prop="role" label="角色" />
-<el-table-column v-if="isAdmin" label="操作">
-<template #default="scope">
-<el-button @click="editUser(scope.row)">编辑</el-button>
-<el-button type="danger" @click="deleteUser(scope.row.id)">删除</el-button>
+  <el-card>
+    <h2>用户管理</h2>
+    <el-table :data="displayUsers" style="width: 100%">
+      <el-table-column prop="username" label="用户名" />
+      <el-table-column prop="role" label="角色" />
+      <el-table-column label="操作">
+        <template #default="scope">
+          <el-button
+            size="mini"
+            type="primary"
+            @click="editUser(scope.row)"
+            :disabled="role !== 'admin' && scope.row.username !== username"
+          >
+            编辑
+          </el-button>
+          <el-button
+            size="mini"
+            type="danger"
+            @click="deleteUser(scope.row)"
+            v-if="role === 'admin'"
+          >
+            删除
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+  </el-card>
 </template>
-</el-table-column>
-</el-table>
-</div>
-</template>
-
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import axios from 'axios'
-import { useUserStore } from '@/store/user'
+import { ref, computed } from 'vue'
+import { useStore } from 'vuex'
+import { ElMessage } from 'element-plus'
 
+const store = useStore()
+const username = computed(() => store.getters['user/getUsername'])
+const role = computed(() => store.getters['user/getRole'])
 
-const store = useUserStore()
-const users = ref([])
-onMounted(() => {
-  const user = JSON.parse(localStorage.getItem('user'))
-  if (user.role !== 'admin') {
-    alert('只有管理员可以查看此页面')
-    router.push('/dashboard')
-    return
-  }
+const allUsers = ref([
+  { username: 'admin', role: 'admin' },
+  { username: 'user1', role: 'user' },
+  { username: 'user2', role: 'user' }
+])
 
-  // 假数据，后面接后端
-  users.value = [
-    { id: 1, username: 'admin' },
-    { id: 2, username: 'user1' }
-  ]
+const displayUsers = computed(() => {
+  return role.value === 'admin'
+    ? allUsers.value
+    : allUsers.value.filter(u => u.username === username.value)
 })
-const isAdmin = computed(() => store.role === 'admin')
 
-
-const fetchUsers = async () => {
-const res = await axios.get('/api/users')
-users.value = res.data
+const editUser = (user) => {
+  ElMessage.info(`编辑用户: ${user.username}`)
 }
 
-
-const deleteUser = async (id) => {
-await axios.delete(`/api/users/${id}`)
-fetchUsers()
+const deleteUser = (user) => {
+  ElMessage.warning(`删除用户: ${user.username}`)
 }
-
-
-onMounted(fetchUsers)
 </script>

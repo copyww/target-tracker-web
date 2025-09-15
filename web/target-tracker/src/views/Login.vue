@@ -1,56 +1,57 @@
 <template>
-  <div class="login-container">
-    <el-card class="login-card">
-      <h2 class="title">系统登录</h2>
-      <el-form :model="form" @submit.prevent="handleLogin">
-        <el-form-item>
-          <el-input v-model="form.username" placeholder="请输入用户名" />
-        </el-form-item>
-        <el-form-item>
-          <el-input v-model="form.password" type="password" placeholder="请输入密码" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleLogin">登录</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-  </div>
+  <el-card class="login-card">
+    <h2>登录</h2>
+    <el-form :model="form" label-position="top">
+      <el-form-item label="用户名">
+        <el-input v-model="form.username" />
+      </el-form-item>
+      <el-form-item label="密码">
+        <el-input type="password" v-model="form.password" />
+      </el-form-item>
+      <el-form-item label="角色">
+        <el-radio-group v-model="form.role">
+          <el-radio label="admin">管理员</el-radio>
+          <el-radio label="user">普通用户</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="handleLogin">登录</el-button>
+      </el-form-item>
+    </el-form>
+  </el-card>
 </template>
 
 <script setup>
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import { useStore } from 'vuex'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
-const form = reactive({ username: '', password: '' })
+const store = useStore()
 
-const handleLogin = () => {
-  // 模拟登录，用户名 admin 为管理员
-  const mockUser = {
-    username: form.username,
-    role: form.username === 'admin' ? 'admin' : 'user'
+const form = reactive({
+  username: '',
+  password: '',
+  role: 'user'
+})
+
+const handleLogin = async () => {
+  try {
+    await store.dispatch('user/login', form)
+    ElMessage.success('登录成功！')
+    router.push('/home')
+  } catch (err) {
+    ElMessage.error(err.message)
   }
-  localStorage.setItem('user', JSON.stringify(mockUser))
-  router.push('/dashboard')
 }
-
 </script>
 
 <style scoped>
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background: #f5f5f5;
-}
 .login-card {
-  width: 400px;
+  width: 360px;
+  margin: 100px auto;
   padding: 20px;
-}
-.title {
   text-align: center;
-  margin-bottom: 20px;
 }
 </style>

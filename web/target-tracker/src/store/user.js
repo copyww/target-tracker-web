@@ -1,29 +1,52 @@
-import { defineStore } from 'pinia'
-import axios from 'axios'
+import { createStore } from 'vuex'
 
-
-export const useUserStore = defineStore('user', {
-state: () => ({
-token: '',
-role: '', // 'admin' | 'user'
-userInfo: {}
-}),
-getters: {
-isAuthenticated: (state) => !!state.token
-},
-actions: {
-async login(username, password) {
-const res = await axios.post('/api/login', { username, password })
-this.token = res.data.token
-this.role = res.data.role
-this.userInfo = res.data.user
-axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
-},
-logout() {
-this.token = ''
-this.role = ''
-this.userInfo = {}
-delete axios.defaults.headers.common['Authorization']
+export default {
+  namespaced: true,
+  state: () => ({
+    username: '',
+    role: '',
+    loggedIn: false,
+  }),
+  getters: {
+    getUsername: state => state.username,
+    getRole: state => state.role,
+    isLoggedIn: state => state.loggedIn,
+  },
+  mutations: {
+    setUsername(state, username) {
+      state.username = username
+    },
+    setRole(state, role) {
+      state.role = role
+    },
+    setLoggedIn(state, value) {
+      state.loggedIn = value
+    },
+  },
+  actions: {
+    login({ commit }, { username, password, role }) {
+      return new Promise((resolve, reject) => {
+        // 模拟账号验证
+        const validAccounts = {
+          admin: { password: '123456', role: 'admin' },
+          user1: { password: '123456', role: 'user' },
+          user2: { password: '123456', role: 'user' },
+        }
+        const account = validAccounts[username]
+        if (account && account.password === password && account.role === role) {
+          commit('setUsername', username)
+          commit('setRole', role)
+          commit('setLoggedIn', true)
+          resolve()
+        } else {
+          reject(new Error('账号或密码错误'))
+        }
+      })
+    },
+    logout({ commit }) {
+      commit('setUsername', '')
+      commit('setRole', '')
+      commit('setLoggedIn', false)
+    }
+  }
 }
-}
-})
