@@ -11,22 +11,23 @@
         </div>
       </el-main>
       <el-footer>
-        <el-button @click="handleUpload" type="primary">
-            Upload<el-icon class="el-icon--right"><Upload /></el-icon>
-        </el-button>
+        <FixedBottomActions />
       </el-footer>
     </el-container>
   </div>
+
+
+
 </template>
 
 
 <script setup>
 import videoShower from './components/videoShower.vue'
 import VideoSidebar from './components/VideoSidebar.vue'
+import FixedBottomActions from './components/FixedBottomActions.vue'
+import UploadModals from './components/UploadModals.vue'
 
-const handleUpload = () => {
-  ElMessage.success('Upload button clicked!')
-};
+
 </script>
 <style lang="scss">
 

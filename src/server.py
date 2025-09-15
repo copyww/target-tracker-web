@@ -1,4 +1,4 @@
-from fastapi import FastAPI,UploadFile,Form
+from fastapi import FastAPI,UploadFile,Header
 from fastapi.responses import JSONResponse
 import os
 from sqlalchemy.orm import Session
@@ -8,12 +8,29 @@ import shutil
 
 app = FastAPI()
 
+
+# 允许的前端地址
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # 允许的前端地址
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 UPLOADS_DIR = "uploads"
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 @app.post("/upload/")
 #async 异步
-async def upload_file(file: UploadFile, user: str =Form("user1") ):
+async def upload_file(file: UploadFile, user: str = Header("user1",alias="Username") ):
     # 保存上传的文件
     user_dir = os.path.join(UPLOADS_DIR, user)
     os.makedirs(user_dir, exist_ok=True)
