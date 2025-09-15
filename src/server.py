@@ -1,9 +1,10 @@
-from fastapi import FastAPI,UploadFile,Header
+from fastapi import FastAPI,UploadFile,Header,Body
 from fastapi.responses import JSONResponse
 import os
 from sqlalchemy.orm import Session
 from db import SessionLocal, User, Video, select
 import shutil
+from pydantic import BaseModel
 
 
 app = FastAPI()
@@ -58,3 +59,19 @@ async def upload_file(file: UploadFile, user: str = Header("user1",alias="Userna
         "user": user,
         "message": "File uploaded successfully"
     })
+
+class UsernameRequest(BaseModel):
+    username: str
+
+@app.post("/videos/")
+async def get_videos_for_user(data: UsernameRequest):
+    username = data.username
+    async with SessionLocal() as session:
+        result = await session.execute(select(User).filter_by(username=username))
+        user = result.scalars().first()
+        if not user:
+            return []
+        
+        result = await session.execute(select(Video).filter_by(user_id=user.id))
+        videos = result.scalars().all()
+        return [{"id": video.id, "title": video.title, "path": video.path, "upload_time": video.upload_time} for video in videos]

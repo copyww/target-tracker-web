@@ -12,10 +12,19 @@
         </div>
     </el-card>
   </el-scrollbar>
+<suspense>
+  {{ testvideos }}
+</suspense>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import axios from 'axios'
+// 获取用户名
+import { useStore } from 'vuex';
+import { computed } from 'vue';
+const store = useStore();
+const username = computed(() => store.getters.getUsername);
 
 const videos = ref([
   { id: 1, title: 'Video 1' },
@@ -29,6 +38,24 @@ const videos = ref([
   { id: 9, title: 'Video 9' },
   { id: 10, title: 'Video 10' },
 ])
+
+testvideos = await fetchVideos();
+
+// 从后端获取视频列表
+async function fetchVideos() {
+  console.log('Fetching videos for user:', username.value);
+  try {
+    
+    const response = await axios.post('http://127.0.0.1:8000/videos/', {
+    username: username.value 
+    });
+    console.log('Fetched videos:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching videos:', error);
+    return [];
+  }
+}
 
 const add = () => {
   count.value++

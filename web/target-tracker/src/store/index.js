@@ -2,7 +2,7 @@ import { createStore } from 'vuex'
 
 export default createStore({
   state: {
-    username : 'usr1',
+    username : 'user1',
   },
   getters: {
     getUsername: state => state.username,
