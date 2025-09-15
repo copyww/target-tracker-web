@@ -1,29 +1,72 @@
+
+
 <template>
-  <videoShower/>
+  <div class="common-layout">
+    <el-container>
+      <el-header></el-header>
+      <el-main>
+        <div class="app-container flex">
+          <videoShower class="flex-1"/>
+          <VideoSidebar class="w-1/3"/>
+        </div>
+      </el-main>
+      <el-footer>
+        <el-button @click="handleUpload" type="primary">
+            Upload<el-icon class="el-icon--right"><Upload /></el-icon>
+        </el-button>
+      </el-footer>
+    </el-container>
+  </div>
 </template>
 
+
 <script setup>
-import videoShower from './components/video-shower.vue'
+import videoShower from './components/videoShower.vue'
+import VideoSidebar from './components/VideoSidebar.vue'
+
+const handleUpload = () => {
+  ElMessage.success('Upload button clicked!')
+};
 </script>
 <style lang="scss">
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+
+.app-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.main {
+  flex: 1;       /* 自动占满剩余空间 */
+  min-width: 0;  /* 防止子元素撑开 */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+.common-layout,
+.el-container {
+  height: 100vh;   /* 占满整个屏幕高度 */
+  display: flex;
+  flex-direction: column;
+}
+
+.el-main {
+  flex: 1;         /* 自动填充中间 */
+  overflow: auto;  /* 内容过多时滚动 */
+}
+
+.el-footer {
+  height: 60px;    /* 自定义 footer 高度 */
+  line-height: 60px;
   text-align: center;
-  color: #2c3e50;
+  background: #f2f2f2;
 }
 
-nav {
-  padding: 30px;
+// 整体背景为灰色
 
-  a {
-    font-weight: bold;
-    color: #2c3e50;
-
-    &.router-link-exact-active {
-      color: #42b983;
-    }
-  }
-}
 </style>

@@ -6,7 +6,7 @@
  
     <!-- 主体开始 -->
     <div class="mt-2">
-      <div>视频ID: {{ videoId }}</div>
+      <!-- <div>视频ID: {{ videoId }}</div> -->
       <div>
         <vue3VideoPlay
           class="vue3VideoPlay"
