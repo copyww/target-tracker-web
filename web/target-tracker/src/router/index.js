@@ -1,29 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import store from '@/store'
 import Login from '@/views/Login.vue'
 import Home from '@/views/Home.vue'
-import UserManage from '@/views/UserManage.vue'
-import store from '@/store'
+
 
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', component: Login },
-  { 
-    path: '/home', 
-    component: Home,
-    meta: { requiresAuth: true }
-  },
-  { 
-    path: '/user-manage', 
-    component: UserManage,
-    meta: { requiresAuth: true }
-  },
-  {
-  path: '/user-manage/:username?',
-  name: 'UserManage',
-  component: () => import('@/views/UserManage.vue'),
-  meta: { requiresAuth: true }
-}
-
+  { path: '/home', component: Home, meta: { requiresAuth: true } },
+  {path: '/register',component: () => import('@/views/Register.vue')},
+  { path: '/user-manage', component: () => import('@/views/UserManage.vue'), meta: { requiresAuth: true } },
+  { path: '/self-manage', component: () => import('@/views/SelfManage.vue'), meta: { requiresAuth: true } }
 ]
 
 const router = createRouter({
@@ -31,10 +18,19 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫
+// 路由守卫：支持刷新保持登录
 router.beforeEach((to, from, next) => {
-  const loggedIn = store.getters['user/isLoggedIn']
-  if (to.meta.requiresAuth && !loggedIn) {
+  if(!store.getters['user/isLoggedIn']){
+    const user = JSON.parse(localStorage.getItem('user'))
+    if(user){
+      store.commit('user/setUserId', user.id)
+      store.commit('user/setUsername', user.username)
+      store.commit('user/setRole', user.role)
+      store.commit('user/setLoggedIn', true)
+    }
+  }
+
+  if(to.meta.requiresAuth && !store.getters['user/isLoggedIn']){
     next('/login')
   } else {
     next()

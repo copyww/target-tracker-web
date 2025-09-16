@@ -1,59 +1,147 @@
 <template>
-  <el-card>
-    <h2>用户管理</h2>
-    <el-table :data="displayUsers" style="width: 100%">
-      <el-table-column prop="username" label="用户名" />
-      <el-table-column prop="role" label="角色" />
-      <el-table-column label="操作">
-        <template #default="scope">
-          <el-button
-            size="mini"
-            type="primary"
-            @click="editUser(scope.row)"
-            :disabled="role !== 'admin' && scope.row.username !== username"
-          >
-            编辑
-          </el-button>
-          <el-button
-            size="mini"
-            type="danger"
-            @click="deleteUser(scope.row)"
-            v-if="role === 'admin'"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-  </el-card>
+  <div>
+    <!-- 顶部导航栏 -->
+    <el-header class="header-bar">
+      <span class="app-title">超级管理员</span>
+      <div class="header-right">
+        <span>欢迎, {{ username }}</span>
+        <el-button type="primary" size="small" @click="goLogin">返回主页</el-button>
+        <el-button
+          v-if="role==='admin'"
+          type="success"
+          size="small"
+          @click="fetchUsers"
+        >刷新用户列表</el-button>
+        <el-button type="danger" size="small" @click="logout">退出登录</el-button>
+      </div>
+    </el-header>
+
+    <!-- 用户表格 -->
+    <el-main>
+      <h2 v-if="role==='admin'">用户管理（管理员）</h2>
+      <h2 v-else>我的信息（普通用户）</h2>
+
+      <el-table :data="displayUsers" style="width:100%">
+        <el-table-column prop="username" label="用户名"/>
+        <el-table-column prop="role" label="角色"/>
+        <el-table-column prop="password" label="密码"/>
+        <el-table-column label="操作">
+          <template #default="scope">
+            <el-button size="small" @click="editPassword(scope.row)">修改密码</el-button>
+            <el-button
+              v-if="role==='admin'"
+              size="small"
+              type="danger"
+              @click="deleteUser(scope.row)"
+            >删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-main>
+
+    <!-- 修改密码弹窗（放在最外层） -->
+    <el-dialog v-model="dialogVisible" title="修改密码">
+      <el-input v-model="newPassword" placeholder="请输入新密码"/>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible=false">取消</el-button>
+        <el-button type="primary" @click="confirmChange">确定</el-button>
+      </span>
+    </el-dialog>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 const store = useStore()
-const username = computed(() => store.getters['user/getUsername'])
-const role = computed(() => store.getters['user/getRole'])
+const router = useRouter()
 
-const allUsers = ref([
-  { username: 'admin', role: 'admin' },
-  { username: 'user1', role: 'user' },
-  { username: 'user2', role: 'user' }
-])
+const username = computed(()=>store.getters['user/getUsername'])
+const role = computed(()=>store.getters['user/getRole'])
+const userId = computed(()=>store.getters['user/getUserId'])
 
-const displayUsers = computed(() => {
-  return role.value === 'admin'
-    ? allUsers.value
-    : allUsers.value.filter(u => u.username === username.value)
-})
+const users = ref([])
+const dialogVisible = ref(false)
+const editUser = ref(null)
+const newPassword = ref('')
 
-const editUser = (user) => {
-  ElMessage.info(`编辑用户: ${user.username}`)
+// 获取用户列表
+const fetchUsers = async ()=>{
+  try{
+    if(role.value==='admin'){
+      const res = await axios.get('http://localhost:3000/api/users')
+      users.value = res.data
+    } else {
+      const res = await axios.get(`http://localhost:3000/api/users/${userId.value}`)
+      users.value = [res.data]
+    }
+  }catch(err){
+    ElMessage.error('获取用户失败')
+  }
 }
 
-const deleteUser = (user) => {
-  ElMessage.warning(`删除用户: ${user.username}`)
+onMounted(fetchUsers)
+const displayUsers = computed(()=>users.value)
+
+// 修改密码
+const editPassword = (user)=>{
+  editUser.value = user
+  newPassword.value = ''
+  dialogVisible.value = true
+}
+
+const confirmChange = async ()=>{
+  if(!newPassword.value) return ElMessage.warning('请输入新密码')
+  try{
+    await axios.put(`http://localhost:3000/api/users/${editUser.value.id}/password`, { password:newPassword.value })
+    ElMessage.success('修改成功')
+    dialogVisible.value = false
+    fetchUsers()
+  }catch(err){
+    ElMessage.error(err.response?.data?.message || '修改失败')
+  }
+}
+
+// 删除用户（管理员）
+const deleteUser = async (user)=>{
+  try{
+    await axios.delete(`http://localhost:3000/api/users/${user.id}`)
+    ElMessage.success('删除成功')
+    fetchUsers()
+  }catch(err){
+    ElMessage.error(err.response?.data?.message || '删除失败')
+  }
+}
+
+// 返回主页
+const goLogin = ()=> router.push('/home')
+
+// 退出登录 → 返回主页
+const logout = () => {
+  // 清空 Vuex 状态
+  store.commit('user/logout')
+
+  // 清空 localStorage
+  localStorage.removeItem('user')
+
+  // 退出后跳转到登录页
+  router.push('/login')
 }
 </script>
+
+<style scoped>
+.header-bar {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 20px;
+  background:#409eff;
+  color:#fff;
+}
+.header-right .el-button{ margin-left:10px; }
+.app-title{ font-size:20px; font-weight:bold; }
+</style>

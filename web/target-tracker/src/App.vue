@@ -2,6 +2,7 @@
 
 <template>
   <router-view />
+  <router-view />
   <div class="common-layout">
     <el-container>
       <el-header></el-header>
@@ -24,6 +25,7 @@
 
 <script setup>
 // 这里不需要额外逻辑
+// 这里不需要额外逻辑
 import videoShower from './components/videoShower.vue'
 import VideoSidebar from './components/VideoSidebar.vue'
 import FixedBottomActions from './components/FixedBottomActions.vue'
@@ -31,6 +33,14 @@ import UploadModals from './components/UploadModals.vue'
 
 
 </script>
+
+<style>
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
 
 <style>
 html, body, #app {
