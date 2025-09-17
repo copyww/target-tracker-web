@@ -1,4 +1,6 @@
-<template>
+废案
+
+<!-- <template>
   <div class="common-layout">
     <el-container>
       <el-header></el-header>
@@ -63,4 +65,4 @@ const handleUpload = () => {
   text-align: center;
   background: #f2f2f2;
 }
-</style>
+</style> -->

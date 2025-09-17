@@ -4,7 +4,7 @@
       <!-- 顶部 Header -->
       <el-header class="header-bar">
         <div class="header-left">
-          <span class="app-title">视频管理系统</span>
+          <span class="app-title">目标追踪</span>
         </div>
         <div class="header-right">
           <span>欢迎, {{ username }}</span>
@@ -57,24 +57,24 @@ import FixedBottomActions from '@/components/FixedBottomActions.vue'
 const store = useStore()
 const router = useRouter()
 
-const username = computed(() => store.getters['user/getUsername'])
-const role = computed(() => store.getters['user/getRole'])
+const username = computed(() => store.getters['user/getUsername'] || JSON.parse(localStorage.getItem('user') || '{}').username)
+const role = computed(() => store.getters['user/getRole'] || JSON.parse(localStorage.getItem('user') || '{}').role)
+
 
 // 管理员跳转用户管理
-const goUserManage = () => {
-  router.push('/user-manage')
-}
+const goUserManage = () => router.push('/user-manage')
 
 // 普通用户跳转自我管理
 const goSelfManage = () => {
-  router.push(`/user-manage/${username.value}`)
+  router.push('/self-manage')
 }
-
 // 退出登录
 const logout = () => {
   store.commit('user/setLoggedIn', false)
-  store.commit('user/setUsername', '')
-  store.commit('user/setRole', '')
+  store.commit('user/setUsername','')
+  store.commit('user/setRole','')
+  store.commit('user/setUserId', null)
+  localStorage.removeItem('user')
   router.push('/login')
 }
 </script>
