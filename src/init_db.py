@@ -22,10 +22,6 @@ async def add_default_user():
             session.add(User(username="usr1"))
             await session.commit()
 
-<<<<<<< HEAD
-asyncio.run(add_default_user())
-=======
 asyncio.run(add_default_user())
 
 
->>>>>>> 117c2a43949499174f12e29904232b9e8fedea0d

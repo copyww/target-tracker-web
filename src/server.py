@@ -4,10 +4,7 @@ import os
 from sqlalchemy.orm import Session
 from db import SessionLocal, User, Video, select
 import shutil
-<<<<<<< HEAD
-=======
 from pydantic import BaseModel
->>>>>>> 117c2a43949499174f12e29904232b9e8fedea0d
 
 
 app = FastAPI()
@@ -34,11 +31,7 @@ os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 @app.post("/upload/")
 #async 异步
-<<<<<<< HEAD
-async def upload_file(file: UploadFile, user: str =Form("user1") ):
-=======
 async def upload_file(file: UploadFile, user: str = Header("user1",alias="Username") ):
->>>>>>> 117c2a43949499174f12e29904232b9e8fedea0d
     # 保存上传的文件
     user_dir = os.path.join(UPLOADS_DIR, user)
     os.makedirs(user_dir, exist_ok=True)
