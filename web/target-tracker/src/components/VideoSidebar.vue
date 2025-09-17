@@ -1,70 +1,58 @@
 <template>
-  <!-- <el-button @click="add">Add Item</el-button>
-  <el-button @click="onDelete">Delete Item</el-button> -->
   <el-scrollbar max-height="400px" class="video-sidebar">
-    <el-card class="scrollbar-demo-item"   shadow="hover" v-for="video in videos":key="video.id">
-      <div class="card-item" >
-          <img class="thumbnail" src="https://cdn.jsdelivr.net/gh/xdlumia/files/video-play/ironMan.jpg" alt="Video Thumbnail" >
+    <el-card
+      class="scrollbar-demo-item"
+      shadow="hover"
+      v-for="video in videos"
+      :key="video.id"
+    >
+      <div class="card-item">
+        <!-- 用后端返回的缩略图 -->
+        <img class="thumbnail" :src="video.thumbnail" alt="Video Thumbnail" />
         <div class="video-info">
           <p>{{ video.id }}</p>
           <small>{{ video.title }}</small>
         </div>
-        </div>
+      </div>
     </el-card>
   </el-scrollbar>
-<suspense>
-  {{ testvideos }}
-</suspense>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
-// 获取用户名
-import { useStore } from 'vuex';
-import { computed } from 'vue';
-const store = useStore();
-const username = computed(() => store.getters.getUsername);
+import { useStore } from 'vuex'
+import { computed } from 'vue'
 
-const videos = ref([
-  { id: 1, title: 'Video 1' },
-  { id: 2, title: 'Video 2' },
-  { id: 3, title: 'Video 3' },
-  { id: 4, title: 'Video 4' },
-  { id: 5, title: 'Video 5' },
-  { id: 6, title: 'Video 6' },
-  { id: 7, title: 'Video 7' },
-  { id: 8, title: 'Video 8' },
-  { id: 9, title: 'Video 9' },
-  { id: 10, title: 'Video 10' },
-])
+const store = useStore()
+const username = computed(() => store.getters['user/getUsername'])
 
-testvideos = await fetchVideos();
+// 视频列表
+const videos = ref([])
 
 // 从后端获取视频列表
 async function fetchVideos() {
-  console.log('Fetching videos for user:', username.value);
+  console.log('Fetching videos for user:', username.value)
   try {
-    
     const response = await axios.post('http://127.0.0.1:8000/videos/', {
-    username: username.value 
-    });
-    console.log('Fetched videos:', response.data);
-    return response.data;
+      username: username.value
+    })
+    console.log('Fetched videos:', response.data)
+
+    // 只保留 id、title、thumbnail 三个字段
+    videos.value = response.data.map(video => ({
+      id: video.id,
+      title: video.title,
+      thumbnail: video.thumbnail
+    }))
   } catch (error) {
-    console.error('Error fetching videos:', error);
-    return [];
+    console.error('Error fetching videos:', error)
+    videos.value = []
   }
 }
 
-const add = () => {
-  count.value++
-}
-const onDelete = () => {
-  if (count.value > 0) {
-    count.value--
-  }
-}
+// 组件挂载时请求
+onMounted(fetchVideos)
 </script>
 
 <style scoped>

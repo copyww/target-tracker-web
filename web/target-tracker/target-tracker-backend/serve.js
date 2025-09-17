@@ -12,8 +12,8 @@ app.use(bodyParser.json())
 // 数据库连接
 const db = mysql.createConnection({
   host: 'localhost',
-  user: 'root',       // 改成你的MySQL用户名
-  password: '123456', // 改成你的MySQL密码
+  user: 'root',       
+  password: 'su15060859582', 
   database: 'target_tracker'
 })
 
