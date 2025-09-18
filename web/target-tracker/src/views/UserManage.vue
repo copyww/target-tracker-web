@@ -5,7 +5,7 @@
       <span class="app-title">超级管理员</span>
       <div class="header-right">
         <span>欢迎, {{ username }}</span>
-        <el-button type="primary" size="small" @click="goLogin">返回主页</el-button>
+        <el-button type="primary" size="small" @click="goLogin">视频追踪</el-button>
         <el-button
           v-if="role==='admin'"
           type="success"
@@ -25,11 +25,14 @@
         <el-table-column prop="username" label="用户名"/>
         <el-table-column prop="role" label="角色"/>
         <el-table-column prop="password" label="密码"/>
+        <el-table-column prop="email" label="邮箱"/>
         <el-table-column label="操作">
           <template #default="scope">
             <el-button size="small" @click="editPassword(scope.row)">修改密码</el-button>
+            <el-button size="small" @click="editEmail(scope.row)">修改邮箱</el-button>
             <el-button
               v-if="role==='admin'"
+              :disabled="user.id === 3"
               size="small"
               type="danger"
               @click="deleteUser(scope.row)"
@@ -47,6 +50,13 @@
         <el-button type="primary" @click="confirmChange">确定</el-button>
       </span>
     </el-dialog>
+        <el-dialog v-model="dialogVisible1" title="修改邮箱">
+      <el-input v-model="newEmail" placeholder="请输入新邮箱"/>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible1=false">取消</el-button>
+        <el-button type="primary" @click="confirmChange2">确定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -56,6 +66,7 @@ import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import user from '@/store/user'
 
 const store = useStore()
 const router = useRouter()
@@ -63,11 +74,14 @@ const router = useRouter()
 const username = computed(()=>store.getters['user/getUsername'])
 const role = computed(()=>store.getters['user/getRole'])
 const userId = computed(()=>store.getters['user/getUserId'])
+const email = computed(()=>store.getters['user/getEmail'])
 
 const users = ref([])
 const dialogVisible = ref(false)
+const dialogVisible1 = ref(false)
 const editUser = ref(null)
 const newPassword = ref('')
+const newEmail = ref('')
 
 // 获取用户列表
 const fetchUsers = async ()=>{
@@ -94,6 +108,12 @@ const editPassword = (user)=>{
   dialogVisible.value = true
 }
 
+const editEmail = (user)=>{
+  editUser.value = user
+  newEmail.value = ''
+  dialogVisible1.value = true
+}
+
 const confirmChange = async ()=>{
   if(!newPassword.value) return ElMessage.warning('请输入新密码')
   try{
@@ -105,6 +125,18 @@ const confirmChange = async ()=>{
     ElMessage.error(err.response?.data?.message || '修改失败')
   }
 }
+const confirmChange2 = async ()=>{
+  if(!newEmail.value) return ElMessage.warning('请输入新邮箱')
+  try{
+    await axios.put(`http://localhost:3000/api/users/${editUser.value.id}/email`, { email:newEmail.value })
+    ElMessage.success('修改成功')
+    dialogVisible1.value = false
+    fetchUsers()
+  }catch(err){
+    ElMessage.error(err.response?.data?.message || '修改失败')
+  }
+}
+
 
 // 删除用户（管理员）
 const deleteUser = async (user)=>{

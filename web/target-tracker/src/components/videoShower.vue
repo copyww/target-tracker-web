@@ -1,58 +1,95 @@
 <template>
-  <div class="bg-red-300 w-2/3 h-auto relative flex-col mx-auto">
-    <!-- 顶部标题开始 -->
-    <!-- <titleCard>视频</titleCard> -->
-    <!-- 顶部标题结束 -->
- 
-    <!-- 主体开始 -->
-    <div class="mt-2">
-      <!-- <div>视频ID: {{ videoId }}</div> -->
-      <div>
-        <vue3VideoPlay
-          class="vue3VideoPlay"
-          v-bind="options"
-          poster="https://cdn.jsdelivr.net/gh/xdlumia/files/video-play/ironMan.jpg"
-        />
-      </div>
-    </div>
-    <!-- 主体结束 -->
-  </div>
+  <section class="video-box">
+    <videoPlayer
+      ref="videoPlayer"
+      :key="videoKey"
+      :src="videoUrl"
+      :options="videoOptions"
+      class="vjs-custom-skin videoPlayer"
+      :playsinline="true"
+    />
+    <div class="controls">
+  <button @click="startSelectTarget">选择目标并追踪</button>
+</div>
+  </section>
 </template>
- 
-<script setup>
-import { useRoute } from "vue-router";
-// import titleCard from "./components/title.vue";
-import { reactive } from "vue";
- 
-const route = useRoute();
-const videoId = route.params.id;
- 
-const options = reactive({
-  width: "800px", //播放器宽度
-  height: "450px", //播放器高度
-  color: "#409eff", //主题色
-  title: "", //视频名称
-  src: "https://cdn.jsdelivr.net/gh/xdlumia/files/video-play/IronMan.mp4", //视频源
-  muted: false, //静音
-  webFullScreen: false,
-  speedRate: ["0.75", "1.0", "1.25", "1.5", "2.0"], //播放倍速
-  autoPlay: false, //自动播放
-  loop: false, //循环播放
-  mirror: false, //镜像画面
-  ligthOff: false, //关灯模式
-  volume: 0.3, //默认音量大小
-  control: true, //是否显示控制
-  controlBtns: [
-    "audioTrack",
-    "quality",
-    "speedRate",
-    "volume",
-    "setting",
-    "pip",
-    "pageFullScreen",
-    "fullScreen",
-  ], //显示所有按钮,
-});
+
+<script >
+import 'video.js/dist/video-js.css'
+import { videoPlayer } from 'vue-video-player'
+import { bus } from '@/utils/bus'
+
+export default {
+  components: { videoPlayer },
+  data () {
+    return {
+        videoKey: 0,          // 必须初始化
+        videoUrl: '',          // 当前播放 URL
+      videoOptions: {
+
+        playbackRates: [0.7, 1.0, 1.5, 2.0], // 播放速度
+        autoplay: false,
+        controls: true,
+        preload: 'auto',
+        aspectRatio: '16:9',
+        language: 'zh-CN',
+        sources: [
+          {
+            type: 'application/x-mpegURL', // HLS 播放
+            src: ''  // 初始为空，等 bus 事件来设置
+          }
+        ],
+        poster: '',
+        controlBar: {
+          timeDivider: true,
+          durationDisplay: true,
+          remainingTimeDisplay: false,
+          fullscreenToggle: true
+        }
+      }
+    }
+  },
+    computed: {
+    player() {
+      return this.$refs.videoPlayerRef?.player
+    }
+  },
+  mounted () {
+bus.on('playvideo', (video) => {
+  console.log(111111)
+  const newSrc = video.path
+
+    // 更新 videoOptions
+    this.videoOptions['sources'][0]['src'] = newSrc
+    console.log(this.videoOptions['sources'][0]['src'])
+    console.log(22222)
+    this.videoOptions.poster = video.thumbnail
+    this.videoKey += 1  // 强制重新渲染组件
+    this.videoUrl = newSrc
+    console.log(this.videoKey)
+})
+},
+
+ methods: {
+    startSelectTarget() {
+      console.log('clicked')
+      // 暂停视频
+      if (this.player) {this.player.pause()
+        console.log('aaaaaaaaa')
+      }
+
+      // 启动框选模式
+      console.log('进入框选模式，视频已暂停')
+    }
+  }
+
+
+}
 </script>
- 
-<style scoped></style>
+
+<style scoped>
+.video-box {
+  width: 1000px;
+  padding: 20px;
+}
+</style>

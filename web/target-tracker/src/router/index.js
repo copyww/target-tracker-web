@@ -2,15 +2,18 @@ import { createRouter, createWebHistory } from 'vue-router'
 import store from '@/store'
 import Login from '@/views/Login.vue'
 import Home from '@/views/Home.vue'
+import Personal from '@/views/Personal.vue'
 
 
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', component: Login },
   { path: '/home', component: Home, meta: { requiresAuth: true } },
+  { path: '/personal', component: Personal, meta: { requiresAuth: true } },
   {path: '/register',component: () => import('@/views/Register.vue')},
   { path: '/user-manage', component: () => import('@/views/UserManage.vue'), meta: { requiresAuth: true } },
-  { path: '/self-manage', component: () => import('@/views/SelfManage.vue'), meta: { requiresAuth: true } }
+  { path: '/self-manage', component: () => import('@/views/SelfManage.vue'), meta: { requiresAuth: true } },
+  
 ]
 
 const router = createRouter({

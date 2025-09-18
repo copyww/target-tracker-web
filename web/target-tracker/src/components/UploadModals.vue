@@ -4,7 +4,7 @@
   class="upload-demo"
   drag
   action="http://127.0.0.1:8000/upload/"
-  :headers="uploadHeaders"
+  :headers="{ username: username }"
   :show-file-list="True"
   multiple>
   <i class="el-icon-upload"></i>
@@ -15,18 +15,14 @@
 </template>
 
 <script setup>  
+// import { computed } from 'vue';
+// import { mapGetters } from 'vuex';
+
+// 获取用户名
+import { useStore } from 'vuex';
 import { computed } from 'vue';
-import { mapGetters } from 'vuex';
-
-computed({
-  ...mapGetters(['getUsername']),
-  uploadHeaders() {
-    return {
-      'Username': this.getUsername
-    };
-  }
-});
-
+const store = useStore();
+const username = computed(() => store.getters['user/getUsername']);
 
 // show方法
 const show = () => {
