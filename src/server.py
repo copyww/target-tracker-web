@@ -48,6 +48,10 @@ os.makedirs(THUMBNAILS_DIR, exist_ok=True)
 app.mount("/thumbnails", StaticFiles(directory=THUMBNAILS_DIR), name="thumbnails")
 
 
+#获取视频文件来播放，把视频文件夹挂载
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+
+
 @app.post("/upload/")
 async def upload_file(file: UploadFile, user: str = Header("user1", alias="Username")):
     # ========= 保存视频 =========

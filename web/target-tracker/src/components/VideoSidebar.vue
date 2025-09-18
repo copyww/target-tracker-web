@@ -5,6 +5,7 @@
       shadow="hover"
       v-for="video in videos"
       :key="video.id"
+      @click="playVideo(video)"
     >
       <div class="card-item">
         <!-- 用后端返回的缩略图 -->
@@ -23,9 +24,12 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useStore } from 'vuex'
 import { computed } from 'vue'
+import { bus } from '@/utils/bus'
 
 const store = useStore()
 const username = computed(() => store.getters['user/getUsername'])
+
+
 
 // 视频列表
 const videos = ref([])
@@ -43,13 +47,23 @@ async function fetchVideos() {
     videos.value = response.data.map(video => ({
       id: video.id,
       title: video.title,
-      thumbnail: video.thumbnail
+      thumbnail: video.thumbnail,
+      path: video.path // 添加视频路径
     }))
   } catch (error) {
     console.error('Error fetching videos:', error)
     videos.value = []
   }
 }
+
+const playVideo = (video) => {
+  // 这里可以添加播放视频的逻辑
+ bus.emit("playvideo",video)
+}
+
+defineExpose({
+  playVideo
+})
 
 // 组件挂载时请求
 onMounted(fetchVideos)

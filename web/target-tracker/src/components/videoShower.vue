@@ -11,7 +11,6 @@
         <vue3VideoPlay
           class="vue3VideoPlay"
           v-bind="options"
-          poster="https://cdn.jsdelivr.net/gh/xdlumia/files/video-play/ironMan.jpg"
         />
       </div>
     </div>
@@ -23,16 +22,19 @@
 import { useRoute } from "vue-router";
 // import titleCard from "./components/title.vue";
 import { reactive } from "vue";
- 
+import { bus } from "@/utils/bus";
 const route = useRoute();
 const videoId = route.params.id;
- 
+
+
+
+
 const options = reactive({
   width: "800px", //播放器宽度
   height: "450px", //播放器高度
   color: "#409eff", //主题色
   title: "", //视频名称
-  src: "https://cdn.jsdelivr.net/gh/xdlumia/files/video-play/IronMan.mp4", //视频源
+  src: "", //视频源
   muted: false, //静音
   webFullScreen: false,
   speedRate: ["0.75", "1.0", "1.25", "1.5", "2.0"], //播放倍速
@@ -42,6 +44,7 @@ const options = reactive({
   ligthOff: false, //关灯模式
   volume: 0.3, //默认音量大小
   control: true, //是否显示控制
+  poster:"", //预览图
   controlBtns: [
     "audioTrack",
     "quality",
@@ -53,6 +56,15 @@ const options = reactive({
     "fullScreen",
   ], //显示所有按钮,
 });
+
+//为图片视频赋值，准备播放
+bus.on("playvideo",(video)=>{
+  options.src = `http://127.0.0.1:8000/${video.path.replace(/\\/g, "/")}`;
+  options.poster = video.thumbnail;
+})
+
+
+
 </script>
  
 <style scoped></style>
