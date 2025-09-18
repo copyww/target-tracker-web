@@ -4,9 +4,12 @@ import router from './router'
 import store from './store'
 import vue3videoPlay from 'vue3-video-play'
 import 'vue3-video-play/dist/style.css'
-
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+
+import VueVideoPlayer from 'vue-video-player'
+import 'video.js/dist/video-js.css'
+// import 'vue-video-player/src/custom-theme.css'
 
 // 引入图标
 import { Upload } from '@element-plus/icons-vue'
@@ -17,4 +20,9 @@ app.use(router)
 app.use(vue3videoPlay)
 app.use(ElementPlus)
 app.component('Upload', Upload)
+app.use(VueVideoPlayer);
 app.mount('#app')
+
+
+
+

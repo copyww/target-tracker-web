@@ -1,366 +1,70 @@
-# -*- coding: gbk -*-
-import cv2
-import numpy as np
-from ultralytics import YOLO
-import time
+<template>
+  <div class="bg-red-300 w-2/3 h-auto relative flex-col mx-auto">
+    <!-- 顶部标题开始 -->
+    <!-- <titleCard>视频</titleCard> -->
+    <!-- 顶部标题结束 -->
+ 
+    <!-- 主体开始 -->
+    <div class="mt-2">
+      <!-- <div>视频ID: {{ videoId }}</div> -->
+      <div>
+        <vue3VideoPlay
+          class="vue3VideoPlay"
+          v-bind="options"
+        />
+      </div>
+    </div>
+    <!-- 主体结束 -->
+  </div>
+</template>
+ 
+<script setup>
+import { useRoute } from "vue-router";
+// import titleCard from "./components/title.vue";
+import { reactive } from "vue";
+import { bus } from "@/utils/bus";
+const route = useRoute();
+const videoId = route.params.id;
 
-class EnhancedTracker:
-    def __init__(self):
-        # 模型加载
-        self.model = YOLO("yolov8n.pt")
-        # 追踪器相关
-        self.tracker = None
-        self.tracking = False
-        self.lost_count = 0
-        self.max_lost_frames = 30  # 允许丢失的最大帧数
-        
-        # 目标信息存储
-        self.initial_bbox = None
-        self.initial_frame = None
-        self.target_features = None
-        self.last_known_bbox = None
-        
-        # 外观特征提取器
-        self.feature_extractor = cv2.ORB_create(1000)
-        # 特征匹配器
-        self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-        
-    def extract_features(self, frame, bbox):
-        """提取目标区域的特征"""
-        x, y, w, h = [int(i) for i in bbox]
-        # 确保坐标在图像范围内
-        x = max(0, x); y = max(0, y)
-        w = min(w, frame.shape[1] - x)
-        h = min(h, frame.shape[0] - y)
-        
-        if w <= 0 or h <= 0:
-            return None
-            
-        roi = frame[y:y+h, x:x+w]
-        if roi.size == 0:
-            return None
-            
-        # 提取ORB特征
-        keypoints, descriptors = self.feature_extractor.detectAndCompute(roi, None)
-        return descriptors
-    
-    def compare_features(self, desc1, desc2):
-        """比较两个特征描述符的相似度"""
-        if desc1 is None or desc2 is None:
-            return 0
-            
-        try:
-            matches = self.bf.match(desc1, desc2)
-            # 计算匹配质量（匹配点越近越好）
-            similarity = sum([m.distance for m in matches]) / len(matches) if matches else 1000
-            # 转换为相似度分数（距离越小越相似）
-            return 1 / (1 + similarity) if similarity > 0 else 0
-        except:
-            return 0
-    
-    def reidentify_target(self, current_frame):
-        """尝试重新识别丢失的目标"""
-        if not self.initial_frame or self.initial_bbox is None:
-            return None
-            
-        # 使用YOLO检测当前帧中的所有目标
-        results = self.model(current_frame, verbose=False)
-        detections = []
-        
-        for result in results:
-            boxes = result.boxes
-            if boxes is not None:
-                for box in boxes:
-                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                    conf = box.conf[0].cpu().numpy()
-                    cls = int(box.cls[0].cpu().numpy())
-                    
-                    # 只处理置信度高的检测
-                    if conf > 0.5:
-                        bbox = (x1, y1, x2-x1, y2-y1)
-                        detections.append((bbox, conf, cls))
-        
-        best_match = None
-        best_similarity = 0.6  # 相似度阈值
-        
-        for bbox, conf, cls in detections:
-            # 提取当前检测的特征
-            current_features = self.extract_features(current_frame, bbox)
-            
-            # 与初始目标特征比较
-            similarity = self.compare_features(self.target_features, current_features)
-            
-            if similarity > best_similarity:
-                best_similarity = similarity
-                best_match = bbox
-        
-        return best_match
-    
-    def start_tracking(self, frame, bbox):
-        """开始追踪目标"""
-        self.initial_bbox = bbox
-        self.initial_frame = frame.copy()
-        self.target_features = self.extract_features(frame, bbox)
-        self.last_known_bbox = bbox
-        self.tracking = True
-        self.lost_count = 0
-        
-        # 初始化CSRT追踪器
-        self.tracker = cv2.legacy.TrackerCSRT.create()
-        self.tracker.init(frame, bbox)
-        print("追踪开始，目标特征已保存")
-    
-    def update_tracking(self, frame):
-        """更新追踪状态"""
-        if not self.tracking or self.tracker is None:
-            return None, False
-            
-        success, bbox = self.tracker.update(frame)
-        
-        if success:
-            self.lost_count = 0
-            self.last_known_bbox = bbox
-            return bbox, True
-        else:
-            self.lost_count += 1
-            print(f"追踪丢失，已丢失 {self.lost_count} 帧")
-            
-            # 尝试重新识别
-            if self.lost_count <= self.max_lost_frames:
-                reidentified_bbox = self.reidentify_target(frame)
-                if reidentified_bbox is not None:
-                    print("目标重新识别成功！")
-                    self.lost_count = 0
-                    self.tracker = cv2.legacy.TrackerCSRT.create()
-                    self.tracker.init(frame, reidentified_bbox)
-                    self.last_known_bbox = reidentified_bbox
-                    return reidentified_bbox, True
-            
-            # 如果丢失时间太长，停止追踪
-            if self.lost_count > self.max_lost_frames:
-                print("目标长时间丢失，停止追踪")
-                self.tracking = False
-                return None, False
-            
-            return self.last_known_bbox, False  # 返回最后已知位置
 
-def videoPlay():
-    global pause
-    tracker_system = EnhancedTracker()
-    pause = False
-    
-    vc = cv2.VideoCapture(r"F:\opencvTest\video\race.mp4")
-    if not vc.isOpened():
-        print("Video not found")
-        exit()
 
-    while True:
-        if not pause:
-            open, frame = vc.read()
-            if not open:
-                break
-            if frame is None:
-                break
 
-            # 如果正在追踪，更新追踪状态
-            if tracker_system.tracking:
-                bbox, success = tracker_system.update_tracking(frame)
-                
-                if success:
-                    # 绘制追踪框
-                    x, y, w, h = [int(i) for i in bbox]
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                    cv2.putText(frame, "Tracking", (10, 30), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-                else:
-                    # 绘制丢失状态
-                    if tracker_system.last_known_bbox:
-                        x, y, w, h = [int(i) for i in tracker_system.last_known_bbox]
-                        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 2)
-                    cv2.putText(frame, f"Lost: {tracker_system.lost_count}/{tracker_system.max_lost_frames}", 
-                               (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+const options = reactive({
+  width: "800px", //播放器宽度
+  height: "450px", //播放器高度
+  color: "#409eff", //主题色
+  title: "", //视频名称
+  src: "", //视频源
+  muted: false, //静音
+  webFullScreen: false,
+  speedRate: ["0.75", "1.0", "1.25", "1.5", "2.0"], //播放倍速
+  autoPlay: false, //自动播放
+  loop: false, //循环播放
+  mirror: false, //镜像画面
+  ligthOff: false, //关灯模式
+  volume: 0.3, //默认音量大小
+  control: true, //是否显示控制
+  poster:"", //预览图
+  controlBtns: [
+    "audioTrack",
+    "quality",
+    "speedRate",
+    "volume",
+    "setting",
+    "pip",
+    "pageFullScreen",
+    "fullScreen",
+  ], //显示所有按钮,
+});
 
-            cv2.imshow('video', frame)
+//为图片视频赋值，准备播放
+bus.on("playvideo",(video)=>{
+  options.src = `http://127.0.0.1:8000${video.path.replace(/\\/g, "/")}`;
+  options.poster = video.thumbnail;
+})
 
-        key = cv2.waitKey(30) & 0xff
-        if key == 27:  # ESC
-            break
-        if key == ord(' '):  # 空格
-            pause = not pause
-        if key == ord('s'):  # 按S选择ROI
-            pause = True
-            r = cv2.selectROI('video', frame, False, False)
-            if r[2] > 0 and r[3] > 0:  # 确保选择了有效区域
-                tracker_system.start_tracking(frame, r)
-            pause = False
-        if key == ord('r'):  # 按R重置追踪
-            tracker_system.tracking = False
-            tracker_system.tracker = None
-            print("追踪已重置")
 
-    vc.release()
-    cv2.destroyAllWindows()
 
-if __name__ == "__main__":
-    videoPlay()
-	
-	
-	
-	
-	
-	
-	
-	import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-
-class TargetAnalyzer:
-    def __init__(self):
-        # 初始化特征检测器
-        self.orb = cv2.ORB_create(nfeatures=1000)
-        # 初始化FLANN匹配器
-        FLANN_INDEX_LSH = 6
-        index_params = dict(algorithm=FLANN_INDEX_LSH,
-                           table_number=6,
-                           key_size=12,
-                           multi_probe_level=1)
-        search_params = dict(checks=50)
-        self.flann = cv2.FlannBasedMatcher(index_params, search_params)
-        
-        # 存储目标特征
-        self.target_features = None
-        self.target_kp = None
-        self.target_des = None
-        self.target_shape = None
-        
-    def detect_target(self, image):
-        """使用Haar级联检测器检测目标（这里以人脸为例）"""
-        # 你可以替换为你的目标检测方法
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-        
-        if len(faces) > 0:
-            x, y, w, h = faces[0]
-            return (x, y, w, h)
-        return None
-    
-    def extract_features(self, image, bbox):
-        """从目标区域提取特征"""
-        x, y, w, h = bbox
-        target_roi = image[y:y+h, x:x+w]
-        
-        # 存储目标形状
-        self.target_shape = (h, w)
-        
-        # 提取关键点和描述符
-        kp, des = self.orb.detectAndCompute(target_roi, None)
-        
-        return kp, des, target_roi
-    
-    def save_target_features(self, kp, des):
-        """保存目标特征"""
-        self.target_kp = kp
-        self.target_des = des
-    
-    def match_target(self, image):
-        """在新图像中匹配目标"""
-        if self.target_des is None:
-            print("请先保存目标特征!")
-            return None
-        
-        # 在整个图像中检测关键点和描述符
-        kp, des = self.orb.detectAndCompute(image, None)
-        
-        if des is not None and len(des) > 2:
-            # 匹配特征
-            matches = self.flann.knnMatch(self.target_des, des, k=2)
-            
-            # 应用Lowe's比率测试筛选好的匹配
-            good_matches = []
-            for match_pair in matches:
-                if len(match_pair) == 2:
-                    m, n = match_pair
-                    if m.distance < 0.7 * n.distance:
-                        good_matches.append(m)
-            
-            # 如果找到足够多的好匹配点
-            if len(good_matches) > 10:
-                # 获取匹配点的坐标
-                src_pts = np.float32([self.target_kp[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-                dst_pts = np.float32([kp[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-                
-                # 计算单应性矩阵
-                M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
-                
-                if M is not None:
-                    # 计算目标边界框
-                    h, w = self.target_shape
-                    pts = np.float32([[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]).reshape(-1, 1, 2)
-                    dst = cv2.perspectiveTransform(pts, M)
-                    
-                    return dst, good_matches
-        
-        return None, None
-    
-    def draw_matches(self, image1, kp1, image2, kp2, matches):
-        """绘制匹配结果"""
-        img_matches = cv2.drawMatches(self.target_roi, self.target_kp, image2, kp2, matches, None, flags=2)
-        return img_matches
-
-# 使用示例
-if __name__ == "__main__":
-    # 初始化分析器
-    analyzer = TargetAnalyzer()
-    
-    # 读取第一帧图像（包含目标）
-    image1 = cv2.imread('target_image.jpg')
-    if image1 is None:
-        print("无法读取图像，请检查路径")
-        exit()
-    
-    # 检测目标
-    bbox = analyzer.detect_target(image1)
-    if bbox is None:
-        print("未检测到目标")
-        exit()
-    
-    # 提取并保存目标特征
-    kp, des, target_roi = analyzer.extract_features(image1, bbox)
-    analyzer.save_target_features(kp, des)
-    analyzer.target_roi = target_roi  # 保存目标区域图像用于显示
-    
-    # 在图像上绘制检测框
-    x, y, w, h = bbox
-    cv2.rectangle(image1, (x, y), (x+w, y+h), (0, 255, 0), 2)
-    cv2.imshow('Detected Target', image1)
-    cv2.waitKey(0)
-    
-    # 读取第二帧图像（尝试匹配目标）
-    image2 = cv2.imread('search_image.jpg')
-    if image2 is None:
-        print("无法读取第二幅图像，请检查路径")
-        exit()
-    
-    # 匹配目标
-    dst, good_matches = analyzer.match_target(image2)
-    
-    if dst is not None:
-        # 绘制匹配边界框
-        image2_with_box = image2.copy()
-        image2_with_box = cv2.polylines(image2_with_box, [np.int32(dst)], True, (0, 255, 0), 3, cv2.LINE_AA)
-        
-        # 显示结果
-        cv2.imshow('Matched Target', image2_with_box)
-        cv2.waitKey(0)
-        
-        # 获取第二幅图像的关键点用于绘制匹配
-        kp2, des2 = analyzer.orb.detectAndCompute(image2, None)
-        if kp2 is not None:
-            match_img = analyzer.draw_matches(target_roi, kp, image2, kp2, good_matches[:30])
-            cv2.imshow('Feature Matches', match_img)
-            cv2.waitKey(0)
-    else:
-        print("未找到匹配的目标")
-    
-    cv2.destroyAllWindows()
+</script>
+ 
+<style scoped></style>
