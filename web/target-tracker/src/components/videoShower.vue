@@ -32,7 +32,10 @@ export default {
       currentY: 0,
       videoUrl: '',
       videoKey: 0,
-      ws: null
+      ws: null,
+      mp4_path: null,
+      roi: null,
+      sendInterval: null
     }
   },
   mounted() {
@@ -41,10 +44,7 @@ export default {
     // 初始化 HLS
     this.hls = new Hls()
     this.hls.attachMedia(this.videoEl)
-
-    this.hls.on(Hls.Events.ERROR, (event, data) => {
-      console.error('[HLS ERROR]', data)
-    })
+    this.hls.on(Hls.Events.ERROR, (event, data) => console.error('[HLS ERROR]', data))
 
     // WebSocket
     this.ws = new WebSocket('ws://127.0.0.1:8000/ws/track')
@@ -55,7 +55,10 @@ export default {
 
     // bus 播放视频
     bus.on('playvideo', (video) => {
+      if (!video?.path?.trim()) return console.error('video.path is empty!', video)
       this.videoUrl = video.path
+      this.mp4_path = video.mp4_path
+      this.roi = null
       if (Hls.isSupported()) {
         this.hls.loadSource(video.path)
         this.hls.startLoad()
@@ -65,26 +68,26 @@ export default {
       this.videoEl.poster = video.thumbnail
       this.videoKey += 1
       this.videoEl.play()
+      this.clearSendLoop()
     })
 
-    // 空格键控制播放
     window.addEventListener('keydown', this.handleKeydown)
+    this.videoEl.addEventListener('pause', () => this.isPaused = true)
+    this.videoEl.addEventListener('play', () => {
+      this.isPaused = false
+      if (this.roi) this.startSendLoop()
+    })
 
-    // video 播放/暂停监听
-    this.videoEl.addEventListener('pause', () => { this.isPaused = true })
-    this.videoEl.addEventListener('play', () => { this.isPaused = false; this.isDrawing = false })
-
-    // 初始化 canvas 固定大小
     this.resizeCanvas()
   },
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleKeydown)
     if (this.hls) this.hls.destroy()
+    this.clearSendLoop()
   },
   methods: {
     resizeCanvas() {
       const canvas = this.$refs.overlayCanvas
-      // 🔒固定宽高（和 video-box 保持一致）
       canvas.width = 1000
       canvas.height = 562
     },
@@ -93,11 +96,8 @@ export default {
         e.preventDefault()
         e.stopPropagation()
         if (!this.videoEl) return
-        if (this.videoEl.paused) {
-          this.videoEl.play()
-        } else {
-          this.videoEl.pause()
-        }
+        if (this.videoEl.paused) this.videoEl.play()
+        else this.videoEl.pause()
       }
     },
     startDraw(e) {
@@ -127,32 +127,72 @@ endDraw() {
   window.removeEventListener('mousemove', this.drawing)
   window.removeEventListener('mouseup', this.endDraw)
 
-  const box = {
-    x: this.startX,
-    y: this.startY,
-    width: this.currentX - this.startX,
-    height: this.currentY - this.startY
-  }
-  console.log('框选区域：', box)
-
-  if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-    this.ws.send(JSON.stringify(box))
-  }
-
-  // 👉 松开后立刻清掉用户的红框
+  // 计算视频原始像素坐标
   const canvas = this.$refs.overlayCanvas
+  const videoWidth = this.videoEl.videoWidth
+  const videoHeight = this.videoEl.videoHeight
+  const scaleX = videoWidth / canvas.width
+  const scaleY = videoHeight / canvas.height
+
+  const x = Math.round(this.startX * scaleX)
+  const y = Math.round(this.startY * scaleY)
+  const width = Math.round((this.currentX - this.startX) * scaleX)
+  const height = Math.round((this.currentY - this.startY) * scaleY)
+
+  // 保存 ROI
+  this.roi = { x, y, width, height }
+
+  // 清掉红框
   const ctx = canvas.getContext('2d')
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+  // --- 发送初始化消息 ---
+  if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    const data = {
+      type: "init",
+      roi: this.roi,
+      time: this.videoEl.currentTime,
+      mp4_path: this.mp4_path
+    }
+    this.ws.send(JSON.stringify(data))
+  }
+
+  // 播放视频并开始循环追踪
   this.videoEl.play()
+  this.startSendLoop()
 },
+startSendLoop() {
+  if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
+  this.clearSendLoop()
+  this.sendInterval = setInterval(() => {
+    if (this.videoEl.paused) return
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
+    const data = {
+      type: "track",
+      time: this.videoEl.currentTime,
+      mp4_path: this.mp4_path
+    }
+    this.ws.send(JSON.stringify(data))
+  }, 40) // ~25fps
+},
+    clearSendLoop() {
+      if (this.sendInterval) {
+        clearInterval(this.sendInterval)
+        this.sendInterval = null
+      }
+    },
     drawTrackedBox(box) {
       const canvas = this.$refs.overlayCanvas
       const ctx = canvas.getContext('2d')
       ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      // 绘制时将视频原始像素缩放到 canvas 显示尺寸
+      const scaleX = canvas.width / this.videoEl.videoWidth
+      const scaleY = canvas.height / this.videoEl.videoHeight
+
       ctx.strokeStyle = 'lime'
       ctx.lineWidth = 2
-      ctx.strokeRect(box.x, box.y, box.width, box.height)
+      ctx.strokeRect(box.x * scaleX, box.y * scaleY, box.width * scaleX, box.height * scaleY)
     }
   }
 }
@@ -161,10 +201,10 @@ endDraw() {
 <style scoped>
 .video-box {
   position: relative;
-  width: 1000px;  /* 🔒固定宽度 */
-  height: 562px;  /* 🔒固定高度（16:9 比例） */
+  width: 1000px;
+  height: 562px;
   background: black;
-  flex-shrink: 0; /* ✅避免把旁边列表挤没 */
+  flex-shrink: 0;
 }
 .video-player {
   position: absolute;

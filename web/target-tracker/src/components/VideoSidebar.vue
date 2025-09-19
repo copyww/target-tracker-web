@@ -48,8 +48,10 @@ async function fetchVideos() {
       id: video.id,
       title: video.title,
       thumbnail: video.thumbnail,
-      path: video.path // 添加视频路径
+      path: video.hls_path, // 添加视频路径
+      mp4_path:video.mp4_path
     }))
+    console.log(videos.value)
   } catch (error) {
     console.error('Error fetching videos:', error)
     videos.value = []

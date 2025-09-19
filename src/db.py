@@ -23,6 +23,7 @@ class Video(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String)
     path = Column(String)
+    mp4_path = Column(String)
     thumbnail = Column(String)  # 新增：缩略图路径
     upload_time = Column(DateTime, default=datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"))
