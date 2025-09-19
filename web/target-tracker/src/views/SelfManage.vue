@@ -4,7 +4,7 @@
     <el-header class="header-bar">
       <span class="app-title">视频管理系统</span>
       <div class="header-right">
-        <el-button type="primary" size="small" @click="goHome">返回主页</el-button>
+        <el-button type="primary" size="small" @click="goHome">视频追踪</el-button>
         <el-button type="danger" size="small" @click="logout">退出登录</el-button>
       </div>
     </el-header>
@@ -21,6 +21,12 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="updatePassword">修改密码</el-button>
+        </el-form-item>
+         <el-form-item label="邮箱">
+          <el-input type="email" v-model="user.email"/>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="updateEmail">修改邮箱</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -62,6 +68,15 @@ const updatePassword = async () => {
     ElMessage.error('修改失败')
   }
 }
+const updateEmail = async () => {
+  try {
+    await axios.put(`http://localhost:3000/api/users/${user.id}/email`, { email: user.email })
+    ElMessage.success('修改成功')
+  } catch(err) {
+    ElMessage.error('修改失败')
+  }
+}
+
 
 const goHome = () => {
   router.push('/home')

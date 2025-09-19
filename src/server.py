@@ -82,7 +82,7 @@ async def upload_file(file: UploadFile, user: str = Header("user1", alias="Usern
     os.makedirs(hls_user_dir, exist_ok=True)
     hls_path = os.path.join(hls_user_dir, f"{hls_basename}.m3u8")
 
-    ffmpeg = r"F:\环境\ffmpeg-2025-09-15-git-16b8a7805b-essentials_build\bin\ffmpeg.exe"
+    ffmpeg = r"C:\Users\23374\Desktop\综合三\ffmpeg-8.0-essentials_build\ffmpeg-8.0-essentials_build\bin\ffmpeg.exe"
     subprocess.run([
         ffmpeg,
         "-i", tmp_file_path,

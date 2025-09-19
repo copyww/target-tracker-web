@@ -32,7 +32,7 @@ import { ElMessage } from 'element-plus'
 const router = useRouter()
 const store = useStore()
 
-const form = reactive({ username:'', password:'', role:'user' })
+const form = reactive({ username:'', password:'', role:'admin' })
 
 const handleLogin = async ()=>{
   try{

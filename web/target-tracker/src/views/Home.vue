@@ -6,6 +6,8 @@
         <div class="header-left">
           <span class="app-title">目标追踪</span>
         </div>
+        <span class="coins-display">金币: {{ coins }}</span>
+
         <div class="header-right">
           <span>欢迎, {{ username }}</span>
           <!-- 管理员显示用户管理按钮 -->
@@ -17,6 +19,13 @@
           >
             用户管理
           </el-button>
+            <el-button
+            type="primary"
+            size="small"
+            @click="goPersonal"
+          >
+            我的主页
+          </el-button>
           <!-- 普通用户显示个人管理按钮 -->
           <el-button
             v-if="role === 'user'"
@@ -26,6 +35,7 @@
           >
             我的信息
           </el-button>
+                  
           <el-button type="danger" size="small" @click="logout">退出</el-button>
         </div>
       </el-header>
@@ -56,6 +66,7 @@ import FixedBottomActions from '@/components/FixedBottomActions.vue'
 
 const store = useStore()
 const router = useRouter()
+const coins = computed(() => store.getters['user/getCoins']|| JSON.parse(localStorage.getItem('user') || '{}').coins)
 
 const username = computed(() => store.getters['user/getUsername'] || JSON.parse(localStorage.getItem('user') || '{}').username)
 const role = computed(() => store.getters['user/getRole'] || JSON.parse(localStorage.getItem('user') || '{}').role)
@@ -68,6 +79,8 @@ const goUserManage = () => router.push('/user-manage')
 const goSelfManage = () => {
   router.push('/self-manage')
 }
+//跳转主页
+const goPersonal = () => router.push('/personal')
 // 退出登录
 const logout = () => {
   store.commit('user/setLoggedIn', false)
