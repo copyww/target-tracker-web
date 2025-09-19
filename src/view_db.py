@@ -8,13 +8,13 @@ async def view_db():
         users = result.scalars().all()
         print("Users in database:")
         for user in users:
-            print(f"ID: {user.id}, Username: {user.username}, Password: {user.password}")
+            print(f"ID: {user.id}, Username: {user.username}")
 
         # 查看所有视频
         result = await session.execute(select(Video))
         videos = result.scalars().all()
         print("\nVideos in database:")
         for video in videos:
-            print(f"ID: {video.id}, Title: {video.title}, Path: {video.path}, Upload_time: {video.upload_time}, User_id: {video.user_id}")
+            print(f"ID: {video.id}, Title: {video.title}, Path: {video.path},mp4_path:{video.mp4_path}, Upload_time: {video.upload_time}, User_id: {video.user_id}")
 
 asyncio.run(view_db())
