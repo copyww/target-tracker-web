@@ -47,7 +47,7 @@ export default {
     })
 
     // WebSocket
-    this.ws = new WebSocket('ws://127.0.0.1:8000/ws-tracking')
+    this.ws = new WebSocket('ws://127.0.0.1:8000/ws/track')
     this.ws.onmessage = (event) => {
       const data = JSON.parse(event.data)
       this.drawTrackedBox(data)
@@ -121,26 +121,31 @@ export default {
       ctx.lineWidth = 2
       ctx.strokeRect(this.startX, this.startY, this.currentX - this.startX, this.currentY - this.startY)
     },
-    endDraw() {
-      if (!this.isPaused) return
-      this.isDrawing = false
-      window.removeEventListener('mousemove', this.drawing)
-      window.removeEventListener('mouseup', this.endDraw)
+endDraw() {
+  if (!this.isPaused) return
+  this.isDrawing = false
+  window.removeEventListener('mousemove', this.drawing)
+  window.removeEventListener('mouseup', this.endDraw)
 
-      const box = {
-        x: this.startX,
-        y: this.startY,
-        width: this.currentX - this.startX,
-        height: this.currentY - this.startY
-      }
-      console.log('框选区域：', box)
+  const box = {
+    x: this.startX,
+    y: this.startY,
+    width: this.currentX - this.startX,
+    height: this.currentY - this.startY
+  }
+  console.log('框选区域：', box)
 
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify(box))
-      }
+  if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    this.ws.send(JSON.stringify(box))
+  }
 
-      this.videoEl.play()
-    },
+  // 👉 松开后立刻清掉用户的红框
+  const canvas = this.$refs.overlayCanvas
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  this.videoEl.play()
+},
     drawTrackedBox(box) {
       const canvas = this.$refs.overlayCanvas
       const ctx = canvas.getContext('2d')

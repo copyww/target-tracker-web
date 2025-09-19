@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, UploadFile, Header
+import json
+from fastapi import FastAPI, HTTPException, UploadFile, Header, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 import os
 from sqlalchemy.orm import Session
@@ -18,7 +19,7 @@ def generate_thumbnail(video_path, thumbnail_path):
 
 def sanitize_filename(filename):
     ext = os.path.splitext(filename)[1]  # 保留原始扩展名
-    new_name = f"{uuid.uuid4().hex}{ext}"
+    new_name = f"{uuid.uuid4().hex}{ext}" 
     return new_name
 
 
@@ -174,6 +175,26 @@ async def get_hls(user: str, video_id: str, filename: str):
     elif filename.endswith(".ts"):
         media_type = "video/mp2t"
     else:
-        media_type = "application/octet-stream"
+        media_type = "application/octet-stream"   
 
     return FileResponse(file_path, media_type=media_type)
+
+
+
+@app.websocket("/ws/track")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            frame_info = json.loads(data)  # 假设前端发 {x,y,w,h}
+
+            # 简单逻辑：框往右移 10
+            frame_info["x"] += 10
+
+            # 返回给前端
+            await websocket.send_text(json.dumps(frame_info))
+
+    except WebSocketDisconnect:
+        print("客户端断开连接")
+
