@@ -24,6 +24,18 @@ db.connect(err => {
   }
   console.log('✅ 数据库连接成功')
 })
+  const createTableSQL = `
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(50) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      role ENUM('admin','user') NOT NULL DEFAULT 'user'
+    );
+  `
+  db.query(createTableSQL, (err) => {
+    if (err) console.error('创建 users 表失败: ', err)
+    else console.log('✅ users 表已准备好')
+  })
 
 // 登录接口
 app.post('/api/login', (req,res)=>{
