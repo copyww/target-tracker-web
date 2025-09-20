@@ -1,2 +1,5 @@
 GPU加速
 https://geek-blogs.com/blog/install-opencv-python-with-cuda/#%E5%AE%89%E8%A3%85nvidia%E9%A9%B1%E5%8A%A8
+
+
+uvicorn server:app --reload --host 0.0.0.0 --port 8000
